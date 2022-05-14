@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="PermissionBased:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/PermissionBased_jar</output-path>
+    <root id="archive" name="PermissionBased.jar">
+      <element id="module-output" name="PermissionBased" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/anaptecs/jeaf/owalibs/org.apache.commons.cli/4.3.1/org.apache.commons.cli-4.3.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
