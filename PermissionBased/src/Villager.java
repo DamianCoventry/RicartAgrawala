@@ -16,7 +16,7 @@ import java.util.ArrayDeque;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
-public class Villager extends Thread implements IState, IGroceryShopping {
+public class Villager extends Thread implements IVillager, IRequestsMiniMartAccess {
     public static final int NUM_VILLAGERS_PER_NODE = 5;
     public static final int MAX_NUM_TIMES_SHOPPED = 3;
     private static final int MIN_SHOPPING_TIME = 100;
@@ -25,16 +25,16 @@ public class Villager extends Thread implements IState, IGroceryShopping {
     private static final int MAX_SHOPPING_MSGS = 5;
 
     private final CountDownLatch _done;
-    private final ITransport _transport;
-    private final ArrayDeque<VillagerId> _replyList;
+    private final IMessenger _messenger;
+    private final ArrayDeque<VillagerAddress> _replyList;
     private final Random _random;
     private final int _portStart;
     private final int _totalVillagers;
-    private final VillagerId _villagerId;
-    private final boolean[] _hasReplied;
-    private final boolean[] _hasEnded;
+    private final VillagerAddress _myId;
+    private final boolean[] _villagerHasReplied;
+    private final boolean[] _villagerHasFinishedShopping;
 
-    private boolean _insideMiniMart;
+    private boolean _requestingMiniMartAccess;
     private int _ticket;
     private int _largestTicket;
     private int _numTimesShopped;
@@ -46,43 +46,44 @@ public class Villager extends Thread implements IState, IGroceryShopping {
         _portStart = portStart;
         _random = new Random();
 
-        _insideMiniMart = false;
+        _requestingMiniMartAccess = false;
         _replyList = new ArrayDeque<>();
 
         _totalVillagers = totalVillagers;
-        _hasReplied = new boolean[totalVillagers];
-        _hasEnded = new boolean[totalVillagers];
+        _villagerHasReplied = new boolean[totalVillagers];
+        _villagerHasFinishedShopping = new boolean[totalVillagers];
         for (int i = 0; i < totalVillagers; ++i) {
-            _hasEnded[i] = false;
+            _villagerHasFinishedShopping[i] = false;
         }
 
-        int ticketNumber = _random.nextInt(4 * totalVillagers);
+        int ticketNumber = _random.nextInt(4 * totalVillagers);  // the x4 will help reduce clashes
         _largestTicket = _ticket = ticketNumber;
         _numTimesShopped = 0;
 
-        _villagerId = new VillagerId(InetAddress.getByName(ipAddress), portStart + id, id);
-        _transport = new UdpTransport(InetAddress.getByName(ipAddress), portStart + id);
+        _myId = new VillagerAddress(InetAddress.getByName(ipAddress), portStart + id, id);
+        _messenger = new UdpMessenger(InetAddress.getByName(ipAddress), portStart + id);
 
-        _receiver = new Receiver(_transport, this, _villagerId);
+        _receiver = new Receiver(_messenger, this);
         _receiver.start();
     }
 
     @Override
     public void run() {
         try {
-            while (haveNotFinishedShopping()) {
-                try (MiniMart ignored = new MiniMart(this)) {
-                    takeTicket();
-                    clearReplies();
-                    broadcastMessage(Payload.Command.TICKET);
-                    waitForReplies();
-                    shop();
-                    incShoppingCount();
+            while (hasNotFinishedShopping()) {
+                try (MiniMartAccess ignored = new MiniMartAccess(this)) {
+                    takeTheNextTicket();
+                    clearOtherVillagersReplies();
+                    tellOtherVillagersMyTicket();
+                    waitForOtherVillagersToReply();
+                    enterMiniMart();
+                    incrementShoppingCount();
                 }
-                sendReplies();
+
+                tellOtherVillagersIveExitedTheMiniMart();
             }
 
-            waitForAllEnded();
+            waitForOtherVillagersToFinishShopping();
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -93,32 +94,14 @@ public class Villager extends Thread implements IState, IGroceryShopping {
         }
     }
 
-    private void shop() throws InterruptedException {
-        System.out.println(_villagerId.getDisplayString() + "entered the Mini Mart.");
-
-        int count = MIN_SHOPPING_MSGS + _random.nextInt(MAX_SHOPPING_MSGS - MIN_SHOPPING_MSGS);
-        for (int i = 0; i < count; ++i) {
-            System.out.println(_villagerId.getDisplayString() + "is shopping...");
-            Thread.sleep(MIN_SHOPPING_TIME + _random.nextInt(MAX_SHOPPING_TIME - MIN_SHOPPING_TIME));
-        }
-    }
-
-    private synchronized void incShoppingCount() throws IOException {
-        if (++_numTimesShopped >= MAX_NUM_TIMES_SHOPPED) {
-            System.out.println(_villagerId.getDisplayString() + "finished shopping.");
-            _hasEnded[_villagerId.getId()] = true;
-            broadcastMessage(Payload.Command.ENDED);
-        }
-    }
-
-    @Override
-    public synchronized boolean haveNotFinishedShopping() {
-        return _numTimesShopped < MAX_NUM_TIMES_SHOPPED;
-    }
-
     @Override
     public synchronized void updateLargestTicket(Message message) {
-        _largestTicket = Math.max(_largestTicket, message.getPayload()._ticket);
+        _largestTicket = message.getLargerTicket(_largestTicket);
+    }
+
+    @Override
+    public synchronized VillagerAddress getMyId() {
+        return _myId;
     }
 
     @Override
@@ -126,125 +109,156 @@ public class Villager extends Thread implements IState, IGroceryShopping {
         return _ticket;
     }
 
-    private synchronized void takeTicket() {
+    @Override
+    public void recordVillagersAddress(VillagerAddress villagerAddress) {
+        _replyList.push(villagerAddress);
+    }
+
+    @Override
+    public synchronized boolean doesVillagerShopBeforeMe(Message message) {
+        return message.isFewerThan(_ticket, _messenger.getTieBreakerValue());
+    }
+
+    @Override
+    public synchronized void recordAcknowledgement(Message message) {
+        if (message.getVillagerIndex() >= 0 && message.getVillagerIndex() < _totalVillagers) {
+            _villagerHasReplied[message.getVillagerIndex()] = true;
+            notifyAll();        // Unblock waiting threads
+        }
+    }
+
+    @Override
+    public synchronized void recordFinishedShopping(Message message) {
+        if (message.getVillagerIndex() >= 0 && message.getVillagerIndex() < _totalVillagers) {
+            _villagerHasFinishedShopping[message.getVillagerIndex()] = true;
+            notifyAll();        // Unblock waiting threads
+        }
+    }
+
+    @Override
+    public synchronized boolean hasNotFinishedShopping() {
+        return _numTimesShopped < MAX_NUM_TIMES_SHOPPED;
+    }
+
+    @Override
+    public synchronized boolean isRequestingMiniMartAccess() {
+        return _requestingMiniMartAccess;
+    }
+
+    @Override
+    public synchronized void startRequestingMiniMartAccess() {
+        _requestingMiniMartAccess = true;
+    }
+
+    @Override
+    public synchronized void stopRequestingMiniMartAccess() {
+        _requestingMiniMartAccess = false;
+    }
+
+    private void enterMiniMart() throws InterruptedException {
+        System.out.println(_myId.getDisplayString() + "entered the Mini Mart.");
+
+        int count = MIN_SHOPPING_MSGS + _random.nextInt(MAX_SHOPPING_MSGS - MIN_SHOPPING_MSGS);
+        for (int i = 0; i < count; ++i) {
+            System.out.println(_myId.getDisplayString() + "is shopping...");
+            Thread.sleep(MIN_SHOPPING_TIME + _random.nextInt(MAX_SHOPPING_TIME - MIN_SHOPPING_TIME));
+        }
+    }
+
+    private synchronized void incrementShoppingCount() throws IOException {
+        if (++_numTimesShopped >= MAX_NUM_TIMES_SHOPPED) {
+            System.out.println(_myId.getDisplayString() + "finished all their shopping.");
+            _villagerHasFinishedShopping[_myId.getIndex()] = true;
+
+            tellOtherVillagersIveFinishedShopping();
+        }
+    }
+
+    private synchronized void takeTheNextTicket() {
         _ticket = _largestTicket + 1;
     }
 
-    private synchronized void sendReplies() throws IOException {
-        System.out.println(_villagerId.getDisplayString() + "exited the Mini Mart " + _numTimesShopped + "/" + MAX_NUM_TIMES_SHOPPED + ". Letting the next villager in.");
-
-        Payload payload = new Payload(_villagerId.getId(), getTicket(), Payload.Command.ACK);
-        while (!_replyList.isEmpty()) {
-            sendMessage(_replyList.pop(), payload);
+    private synchronized void clearOtherVillagersReplies() {
+        for (int i = 0; i < _totalVillagers; ++i) {
+            _villagerHasReplied[i] = false;
         }
     }
 
-    private void sendMessage(VillagerId to, Payload payload) throws IOException {
+    private synchronized void waitForOtherVillagersToReply() {
+        // Monitor the _villagerHasReplied array
+        while (haveOtherVillagersNotReplied()) {
+            try {
+                wait();
+            }
+            catch (InterruptedException ignored) { }
+        }
+    }
+
+    private synchronized void waitForOtherVillagersToFinishShopping() {
+        System.out.println(_myId.getDisplayString() +
+                "waiting for other villagers to finish shopping (they need me to reply)");
+
+        // Monitor the _villagerHasFinishedShopping array
+        while (haveOtherVillagersNotFinishedShopping()) {
+            try {
+                wait();
+            }
+            catch (InterruptedException ignored) { }
+        }
+    }
+
+    private synchronized boolean haveOtherVillagersNotReplied() {
+        for (int i = 0; i < _totalVillagers; ++i) {
+            if (i != _myId.getIndex() && !_villagerHasReplied[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private synchronized boolean haveOtherVillagersNotFinishedShopping() {
+        for (int i = 0; i < _totalVillagers; ++i) {
+            if (!_villagerHasFinishedShopping[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private synchronized void tellOtherVillagersIveExitedTheMiniMart() throws IOException {
+        System.out.println(_myId.getDisplayString() + "exited the Mini Mart " +
+                _numTimesShopped + "/" + MAX_NUM_TIMES_SHOPPED + ". Letting the next villager in.");
+
+        Payload payload = Payload.makeAcknowledgement(this);
+        while (!_replyList.isEmpty()) {
+            sendMessageToVillager(_replyList.pop(), payload);
+        }
+    }
+
+    private void tellOtherVillagersMyTicket() throws IOException {
+        sendMessageToOtherVillagers(Payload.makeTicketNumber(this));
+    }
+
+    private void tellOtherVillagersIveFinishedShopping() throws IOException {
+        sendMessageToOtherVillagers(Payload.makeFinishedShopping(this));
+    }
+
+    private void sendMessageToVillager(VillagerAddress to, Payload payload) throws IOException {
         try {
-            _transport.send(new Message(to.getAddress(), to.getPort(), payload));
+            _messenger.send(Message.makeMessage(to, payload));
         }
         catch (SocketException e) {
-            System.out.println("Caught exception [" + e.getLocalizedMessage() + "] when sending a message to " + to.getDisplayString());
+            System.out.println("Caught exception [" + e.getLocalizedMessage() +
+                    "] when sending a message to " + to.getDisplayString());
         }
     }
 
-    @Override
-    public void addReplyToAddress(VillagerId villagerId) {
-        _replyList.push(villagerId);
-    }
-
-    private synchronized void waitForReplies() {
-        // Monitor the _hasResponded array
-        while (doNotHaveAllReplies()) {
-            try {
-                wait();
-            }
-            catch (InterruptedException ignored) { }
-        }
-    }
-
-    @Override
-    public synchronized boolean isTicketFewerThan(Message message) {
-        return message.getPayload()._ticket < _ticket ||
-                (message.getPayload()._ticket == _ticket && message.getPort() < _transport.getPort());
-    }
-
-    private synchronized void clearReplies() {
+    private void sendMessageToOtherVillagers(Payload payload) throws IOException {
         for (int i = 0; i < _totalVillagers; ++i) {
-            _hasReplied[i] = false;
-        }
-    }
-
-    private synchronized boolean doNotHaveAllReplies() {
-        for (int i = 0; i < _totalVillagers; ++i) {
-            if (i != _villagerId.getId() && !_hasReplied[i]) {
-                return true;
+            if (i != _myId.getIndex()) {
+                VillagerAddress to = new VillagerAddress(_messenger.getMyAddress(), _portStart + i, i);
+                sendMessageToVillager(to, payload);
             }
         }
-        return false;
-    }
-
-    private synchronized boolean allHaveNotEnded() {
-        for (int i = 0; i < _totalVillagers; ++i) {
-            if (!_hasEnded[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private synchronized void waitForAllEnded() {
-        System.out.println(_villagerId.getDisplayString() + "waiting for other villagers to end. They need my reply.");
-
-        // Monitor the _hasEnded array
-        while (allHaveNotEnded()) {
-            try {
-                wait();
-            }
-            catch (InterruptedException ignored) { }
-        }
-    }
-
-    private void broadcastMessage(Payload.Command command) throws IOException {
-        Payload payload = new Payload(_villagerId.getId(), getTicket(), command);
-        for (int i = 0; i < _totalVillagers; ++i) {
-            if (i != _villagerId.getId()) {
-                VillagerId to = new VillagerId(_transport.getAddress(), _portStart + i, i);
-                sendMessage(to, payload);
-            }
-        }
-    }
-
-    @Override
-    public synchronized void setHasReplied(Message message) {
-        int id = message.getPayload()._id;
-        if (id >= 0 && id < _totalVillagers) {
-            _hasReplied[id] = true;
-            notifyAll();                    // Unblock waiting threads
-        }
-    }
-
-    @Override
-    public synchronized void setHasEnded(Message message) {
-        int id = message.getPayload()._id;
-        if (id >= 0 && id < _totalVillagers) {
-            _hasEnded[id] = true;
-            notifyAll();                    // Unblock waiting threads
-        }
-    }
-
-    @Override
-    public synchronized boolean isInsideMiniMart() {
-        return _insideMiniMart;
-    }
-
-    @Override
-    public synchronized void enterMiniMart() {
-        _insideMiniMart = true;
-    }
-
-    @Override
-    public synchronized void exitMiniMart() {
-        _insideMiniMart = false;
     }
 }
