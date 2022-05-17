@@ -15,7 +15,7 @@
  * does not stop the request i.e. a thrown exception. This is achieved by using the Java try() {} feature and
  * implementing AutoCloseable.
  *
- * This is required due to the Ricart-Agrawala algorithm being aware of 'quiescent nodes', or as the lecture notes puts
+ * This is required due to the Ricart-Agrawala algorithm being aware of 'quiescent nodes', or as the lecture notes put
  * it:
  *      "If a node remains inactive for a long period, other nodes cannot enter the critical section because of the
  *      ever-increasing ticket numbers."
@@ -24,7 +24,7 @@
  * method isRequestingMiniMartAccess() to perform the test.
  *
  * To reduce class coupling, the MiniMartAccess constructor need not accept a reference to the entire Villager class,
- * but just the far smaller IRequestsMiniMartAccess interface.
+ * just the far smaller IRequestsMiniMartAccess interface.
  */
 public class MiniMartAccess implements AutoCloseable {
     private final IRequestsMiniMartAccess _owner;

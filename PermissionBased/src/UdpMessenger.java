@@ -33,10 +33,10 @@ public class UdpMessenger implements IMessenger {
     /**
      * Creates a UDP socket using the given address and port. After this call, the villager is 'bound' to this address.
      * Any attempt by other software to reuse the port will result in a 'port in use' error for them. This port is
-     * released when the software ends, never before then.
+     * released when the JVM within this node ends, never before then.
      *
      * I deliberately left the choice of IP address and port up to the user so that any IP address on the local
-     * machine could be used. It doesn't have to be the localhost.
+     * machine can be used. It doesn't have to be 127.0.0.1, any valid IP address will do.
      *
      * @param localAddress an address on the local machine to bind to
      * @param port a port on the local machine to bind to

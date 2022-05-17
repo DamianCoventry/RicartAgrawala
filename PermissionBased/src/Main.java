@@ -30,7 +30,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // all command line arguments are mandatory. this will throw a ParseException if the user has not supplied a
-            // value for each argument.
+            // valid value for each argument.
             parseCommandLine(args);
 
             CountDownLatch villagersDone = new CountDownLatch(Villager.NUM_VILLAGERS_PER_NODE);
@@ -52,7 +52,7 @@ public class Main {
             Thread.sleep(5000);
         }
         catch (ParseException pe) {
-            System.out.println("Type line argument parsing error. " + pe.getLocalizedMessage());
+            System.out.println("Command line argument parsing error. " + pe.getLocalizedMessage());
             pe.printStackTrace();
         }
         catch (Exception e) {

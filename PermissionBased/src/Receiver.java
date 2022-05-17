@@ -16,13 +16,13 @@ import java.io.IOException;
  * class.
  *
  * The receiving logic runs in its own thread because the call to receive from the IMessenger reference blocks until a
- * message is received. Therefore, the ability to for any villager avoid starvation is up to the other villagers.
+ * message is received. Therefore, the ability for any villager to avoid starvation is up to the other villagers.
  *
- * This behaviour has the side effect that all villagers must stay resident and active so that all villagers can finish
- * their 3 shopping sessions.
+ * This behaviour has the side effect that all villagers must stay resident, and active, so that all villagers can
+ * finish their 3 shopping sessions.
  *
  * The best example of this is the waitForOtherVillagersToFinishShopping() method within the Receiver class. This only
- * exists to keep each villager alive long enough to feed messages to other villagers that have not finished shopping.
+ * exists to send messages to other villagers that have not finished shopping.
  */
 public class Receiver extends Thread {
     private final IMessenger _messenger;
@@ -41,7 +41,7 @@ public class Receiver extends Thread {
     }
 
     /**
-     * Sets an internal shutdown flag to true. This method is synchronised because the expectation is that Villager
+     * Sets an internal shutdown flag to true. This method is synchronised because the expectation is that the Villager
      * thread and the Receiver thread will read/write this value concurrently.
      */
     public synchronized void shutdown() {
@@ -50,7 +50,7 @@ public class Receiver extends Thread {
 
     /**
      * Reads the current value of an internal shutdown flag. This method is synchronised because the expectation is that
-     * Villager thread and the Receiver thread will read/write this value concurrently.
+     * the Villager thread and the Receiver thread will read/write this value concurrently.
      */
     private synchronized boolean mustShutdown() {
         return _mustShutdown;
@@ -67,9 +67,9 @@ public class Receiver extends Thread {
      *
      * The approach taken here is to be cognisant of two states: finished shopping, and not finished shopping.
      *
-     * The not finished shopping state must perform all Ricart-Agrawala logic. It must record acknowledgements, record
-     * finished shopping messages, update the largest known ticket number, record other villager addresses, and send
-     * our own acknowledgements.
+     * The not finished shopping state must perform all Ricart-Agrawala logic provided by this class. It must record
+     * acknowledgements, record finished shopping messages, update the largest known ticket number, record other
+     * villager addresses, and send our own acknowledgements.
      *
      * When this villager is in the finished shopping state, the only task we need to perform is responding to
      * finished shopping messages from other villagers. This prevents other villagers from becoming starved. If we did

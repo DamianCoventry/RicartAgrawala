@@ -33,9 +33,9 @@ import java.util.concurrent.CountDownLatch;
 public class Villager extends Thread implements IVillager, IRequestsMiniMartAccess {
     public static final int NUM_VILLAGERS_PER_NODE = 5;
     public static final int MAX_NUM_TIMES_SHOPPED = 3;
-    private static final int MIN_SHOPPING_TIME = 1000;
+    private static final int MIN_SHOPPING_TIME = 1000; // just to keep it interesting
     private static final int MAX_SHOPPING_TIME = 2750;
-    private static final int MIN_SHOPPING_MSGS = 2;
+    private static final int MIN_SHOPPING_MSGS = 2; // just to keep it interesting
     private static final int MAX_SHOPPING_MSGS = 5;
 
     private final CountDownLatch _done;
@@ -48,7 +48,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     private final boolean[] _villagerHasReplied;
     private final boolean[] _villagerHasFinishedShopping;
 
-    private boolean _requestingMiniMartAccess;
+    private boolean _requestingMiniMartAccess; // essentially it means 'are we in the critical section?'
     private int _ticket;
     private int _largestTicket;
     private int _numTimesShopped;
@@ -56,7 +56,8 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     private final Receiver _receiver;
 
     /**
-     * Constructs an instance of a villager.
+     * Constructs an instance of a villager. Villager objects within a node don't share any data via memory. They're
+     * intentionally self-contained. 
      * @param done an object to signal when this villager is finished
      * @param ipAddress an address on the local machine to bind to
      * @param portStart the first value in a contiguous range of port values
@@ -93,10 +94,10 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * This method is the core loop of the Villager. It only loops 3 times then ends. Each pass through the loop
      * represents the villager shopping one time. After the loop is ended, this thread will sit and wait inside the
-     * waitForOtherVillagersToFinishShopping() method until all other villages within the simulation have also looped
+     * waitForOtherVillagersToFinishShopping() method until all other villagers within the simulation have also looped
      * 3 times. This extra wait after the core loop prevents other villagers from facing message starvation.
      *
-     * The loop uses the MiniMartAccess class within a try () {} statement to indicate and control the entering and
+     * The loop uses the MiniMartAccess class within a try () {} statement to indicate, and control, the entering and
      * exiting of the critical section of the Ricart-Agrawala algorithm. Structuring the code this way provides a strong
      * guarantee that the JVM will call the Villager class's stopRequestingMiniMartAccess() implementation, therefore
      * assisting in a correct implementation of the RA algorithm.
@@ -107,9 +108,9 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
             // the core loop. this only loops thrice.
             while (hasNotFinishedShopping()) {
                 // this try block contains the villager's request to access the mini mart. by implementing this we
-                // provide a way for the Receiver thread to know this thread is currently requesting access. this is
-                // achieved by the constructor/close methods of the MiniMartAccess class calling back into the
-                // Villager class which sets the value of the _requestingMiniMartAccess variable.
+                // provide a way for the Receiver thread to know this thread is currently requesting mini mart access.
+                // this is achieved by the constructor + close methods of the MiniMartAccess class calling back into the
+                // Villager class, which in turn sets the value of the _requestingMiniMartAccess variable.
                 try (MiniMartAccess ignored = new MiniMartAccess(this)) {
                     // _requestingMiniMartAccess is true at this point
                     takeTheNextTicket();
@@ -149,7 +150,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * Retrieves the address of this villager.
      *
-     * Only called by the Payload class. The Payload class is used by the Receiver thread the Villager thread, hence
+     * Only called by the Payload class. The Payload class is used by the Receiver thread and the Villager thread, hence
      * this method is synchronised.
      */
     @Override
@@ -160,7 +161,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * Retrieves the ticket number of this villager.
      *
-     * Only called by the Payload class. The Payload class is used by the Receiver thread the Villager thread, hence
+     * Only called by the Payload class. The Payload class is used by the Receiver thread and the Villager thread, hence
      * this method is synchronised.
      */
     @Override
@@ -183,8 +184,8 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * Determines if the villager that sent the message must go before this Villager. The test also solves ties by using
      * a tiebreaker value.
      *
-     * Only called by the Receiver thread, but the Villager thread reads the values of _ticket,
-     * hence this method is synchronised.
+     * Only called by the Receiver thread, but the Villager thread reads the values of _ticket, hence this method is
+     * synchronised.
      */
     @Override
     public synchronized boolean doesVillagerShopBeforeMe(Message message) {
@@ -222,7 +223,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     }
 
     /**
-     * Determines if this villager that NOT finished shopping.
+     * Determines if this villager has NOT finished shopping.
      *
      * Only called by the Receiver thread, but the Villager thread writes the value of _numTimesShopped, hence this
      * method is synchronised.
@@ -285,7 +286,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * Bumps the count that indicates how many times this villager has shopped. Ultimately this method is the way in
      * which this application ends.
      *
-     * Only called by the above in the core loop, but the Receiver thread reads the value of _numTimesShopped via the
+     * Only called by the above core loop, but the Receiver thread reads the value of _numTimesShopped via the
      * hasNotFinishedShopping() method, hence this method is synchronised.
      */
     private synchronized void incrementShoppingCount() throws IOException {
@@ -302,16 +303,16 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * Updates internal state to use a new ticket number.
      *
-     * Only called above by the core loop. The Receiver thread reads the value of the _ticket value, hence this method
-     * is synchronised.
+     * Only called above by the core loop. The Receiver thread reads the value of the _ticket variable, hence this
+     * method is synchronised.
      */
     private synchronized void takeTheNextTicket() {
         _ticket = _largestTicket + 1;
     }
 
     /**
-     * Each loop this method is called to reset the knowledge of other villagers replying to our messages. This must
-     * happen so that we can track whether our most recent message has been acknowledged.
+     * For each iteration of the core loop, this method is called to reset the knowledge of other villagers replying to
+     * our messages. This must happen so that we can track whether our most recent message has been acknowledged.
      *
      * The _villagerHasReplied array is accessed by the Receiver thread, hence this method is synchronised.
      */
@@ -322,9 +323,9 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     }
 
     /**
-     * Each loop this method is called to block the Villager thread until its current message has been acknowledged by
-     * all other villagers. This is a core part of the Ricart-Agrawala algorithm. This method implements the Monitor
-     * pattern.
+     * For each iteration of the core loop, this method is called to block the Villager thread until its current message
+     * has been acknowledged by all other villagers. This is a core part of the Ricart-Agrawala algorithm. This method
+     * implements the Monitor pattern.
      *
      * The _villagerHasReplied array is accessed by the Receiver thread, hence this method is synchronised.
      */
@@ -390,7 +391,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
 
     /**
      * Sends a message to the other villagers who will enter the mini mart AFTER this villager. This was determined
-     * earlier by the Receiver thread save the address details from received messages, after comparing ticket numbers.
+     * earlier by the Receiver thread recording the address details from received messages.
      *
      * These other villagers can now be woken up from their wait loops. They will check to see if they've received this
      * wake-up message from all villagers.

@@ -38,8 +38,8 @@ public interface IMessenger {
 
     /**
      * Returns the address of this villager. This method is only here so that a villager can construct the address of
-     * all other villagers. This is because all villagers share the same IP address, but differ by their port.
-     * See ReadMe.md for more info.
+     * all other villagers. This is because all villagers share the same IP address, but differ by their port. See
+     * ReadMe.md for more info.
      * @return this villager's address
      */
     InetAddress getMyAddress();

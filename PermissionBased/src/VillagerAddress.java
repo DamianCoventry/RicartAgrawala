@@ -12,8 +12,8 @@
 import java.net.InetAddress;
 
 /**
- * This class represents the unique address of a villager. Code that has an instance of this class is able to send the
- * villager a message, there are no other requirements for message sending.
+ * This class represents the unique address of a villager. Any class that has a VillagerAddress object is able to send
+ * the villager a message, there are no other requirements for message sending.
  */
 public class VillagerAddress {
     private final InetAddress _address;
@@ -33,7 +33,7 @@ public class VillagerAddress {
     }
 
     /**
-     * Returns the IP address that this villager can receive message upon
+     * Returns the IP address that this villager can receive messages upon
      * @return an IP address
      */
     public InetAddress getAddress() {
@@ -41,7 +41,7 @@ public class VillagerAddress {
     }
 
     /**
-     * Returns the IP port that this villager can receive message upon
+     * Returns the IP port that this villager can receive messages upon
      * @return an IP port
      */
     public int getPort() {

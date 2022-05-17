@@ -10,19 +10,16 @@
  */
 
 /**
- * This interface represents the contract between a villager's receiving thread and another object that stores the state
- * required by a villager who's implementing the Ricart-Agrawala algorithm. I've chosen that object to be the main
- * Villager object, hence the Villager class implements this interface.
+ * This interface represents the contract between a villager's main thread and its message receiving thread. The message
+ * receiving thread has very little state for itself. It delegates almost all state reading/writing decisions through
+ * this interface.
  *
- * Another class that cares about the IVillager interface is the Receiver class. It uses a reference to this interface
- * when it receives a message. The problem this interface solves is that the Receiver does not own the state required to
- * drive the algorithm, instead, it hands off to another object that does own the state. This interface provides that
- * hand off mechanism. That other object is surely modifying the state in another thread, hence implementation of the
- * methods below must be synchronised.
+ * The trade-off, therefore, is the implementation of this interface will need to use synchronised methods so that the
+ * receiving thread can make a meaningful contribution to the Ricart-Agrawala algorithm.
  */
 public interface IVillager {
     /**
-     * This villager's address. This is solely used by the Payload class to insert this villager's index into outgoing
+     * Returns this villager's address. This is solely used by the Payload class to insert this villager's index into outgoing
      * messages. Other villagers need this number when recording received state via a message.
      * @return this villager's address
      */
@@ -36,7 +33,7 @@ public interface IVillager {
     int getTicket();
 
     /**
-     * This method is how villagers keep on choosing unique ticket numbers. When we receive a message from another
+     * This method is how villagers consistently choose unique ticket numbers. When we receive a message from another
      * villager we take note of the ticket number they're using. We subsequently increment this number when we send our
      * next message.
      * @param message a message received from another villager
