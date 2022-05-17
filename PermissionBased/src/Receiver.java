@@ -63,7 +63,7 @@ public class Receiver extends Thread {
      * This method ends when an exception is thrown, or the Villager thread uses the public shutdown() method. The
      * Villager thread will only call that method when it is certain that all villagers have finished shopping.
      *
-     * Roughly half of the Ricart-Agrawala algorithm is implemented here. The other half is within the Receiver class.
+     * Roughly half of the Ricart-Agrawala algorithm is implemented here. The other half is within the Villager class.
      *
      * The approach taken here is to be cognisant of two states: finished shopping, and not finished shopping.
      *

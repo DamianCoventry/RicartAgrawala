@@ -89,7 +89,7 @@ public class UdpMessenger implements IMessenger {
      * @return a value unique to this villager
      */
     @Override
-    public int getTieBreakerValue() {
+    public int getTiebreakerValue() {
         return _socket.getLocalPort();
     }
 }

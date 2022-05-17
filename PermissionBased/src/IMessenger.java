@@ -49,5 +49,5 @@ public interface IMessenger {
      * to generate the same random number.
      * @return a value unique to this villager
      */
-    int getTieBreakerValue();
+    int getTiebreakerValue();
 }
