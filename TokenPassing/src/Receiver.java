@@ -1,3 +1,5 @@
+import java.io.IOException;
+
 /**
  * Designed and written by Damian Coventry
  * Copyright (c) 2022, all rights reserved
@@ -30,8 +32,12 @@ public class Receiver extends Thread {
      * Sets an internal shutdown flag to true. This method is synchronised because the expectation is that the Villager
      * thread and the Receiver thread will read/write this value concurrently.
      */
-    public synchronized void shutdown() {
+    public synchronized void shutdown() throws IOException {
         _mustShutdown = true;
+
+        // unblock our own call to _messenger.receive(). this is required for the last villager to end their Receiver
+        // thread. all villagers before the last one will be unblocked by each other.
+        _messenger.send(Message.makeMessage(_villager.getMyId(), Payload.makeFinishedShopping(_villager)));
     }
 
     /**
@@ -60,7 +66,6 @@ public class Receiver extends Thread {
                 else if (from.isFinishedShopping()) {
                     _villager.recordFinishedShopping(from);
                 }
-
             }
         }
         catch (Exception e) {

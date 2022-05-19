@@ -12,6 +12,8 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -49,19 +51,11 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         _requestingMiniMartAccess = false;
 
         _villagerRequestList = new int[totalVillagers];
-        for (int i = 0; i < totalVillagers; ++i) {
-            _villagerRequestList[i] = 0;
-        }
-
         _villagerGrantedList = new int[totalVillagers];
-        for (int i = 0; i < totalVillagers; ++i) {
-            _villagerGrantedList[i] = 0;
-        }
-
         _villagerHasFinishedShopping = new boolean[totalVillagers];
-        for (int i = 0; i < totalVillagers; ++i) {
-            _villagerHasFinishedShopping[i] = false;
-        }
+        Arrays.fill(_villagerRequestList, 0);
+        Arrays.fill(_villagerGrantedList, 0);
+        Arrays.fill(_villagerHasFinishedShopping, false);
 
         _myId = new VillagerAddress(InetAddress.getByName(ipAddress), portStart + id, id);
         _messenger = new UdpMessenger(InetAddress.getByName(ipAddress), portStart + id);
@@ -69,7 +63,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         if (id == 0) {
             _token = MAGICAL_TOKEN_VALUE;
             _villagerRequestList[id] = 1;
-            System.out.println(_myId.getDisplayString() + " has the token.");
+            System.out.println(_myId.getDisplayString() + "has the token.");
         }
 
         setName("Villager" + id);
@@ -98,14 +92,14 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
 
                 sendTokenToAnotherVillager();
             }
-
-            waitForOtherVillagersToFinishShopping(); // implements the Monitor pattern inside
         }
         catch (Exception e) {
             e.printStackTrace();
         }
         finally {
-            _receiver.shutdown();
+            try {
+                _receiver.shutdown();
+            } catch (IOException ignore) {}
             _done.countDown();
         }
     }
@@ -172,16 +166,14 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
 
     @Override
     public synchronized void sendTokenToAnotherVillager() throws IOException {
-        for (int i = 0; i < _totalVillagers; ++i) {
-            if (i != _myId.getIndex() && !_villagerHasFinishedShopping[i] && _villagerRequestList[i] > _villagerGrantedList[i]) {
-                VillagerAddress to = new VillagerAddress(_messenger.getMyAddress(), _portStart + i, i);
+        int i = randomlyChooseAnotherVillager();
+        if (i >= 0) {
+            VillagerAddress to = new VillagerAddress(_messenger.getMyAddress(), _portStart + i, i);
 
-                System.out.println(_myId.getDisplayString() + "sending the token to " + to.getDisplayString());
-                sendMessageToVillager(to, Payload.makeTokenAndGrantedList(this, _villagerGrantedList));
+            System.out.println(_myId.getDisplayString() + "sending the token to " + to.getDisplayString());
+            sendMessageToVillager(to, Payload.makeTokenAndGrantedList(this, _villagerGrantedList));
 
-                relinquishToken();
-                break;
-            }
+            relinquishToken();
         }
     }
 
@@ -212,6 +204,25 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         _requestingMiniMartAccess = false;
         System.out.println(_myId.getDisplayString() + "exited the Mini Mart " +
                 _numTimesShopped + "/" + MAX_NUM_TIMES_SHOPPED + ". Letting the next villager in.");
+    }
+
+    private int randomlyChooseAnotherVillager() {
+        final ArrayList<Integer> villagers = new ArrayList<>();
+        for (int i = 0; i < _totalVillagers; ++i) {
+            if (isVillagerRequestingToken(i)) {
+                villagers.add(i);
+            }
+        }
+        if (villagers.isEmpty()) { // will happen when this villager is the last villager
+            return -1;
+        }
+        return villagers.get(_random.nextInt(villagers.size()));
+    }
+
+    private boolean isVillagerRequestingToken(int i) {
+        return i != _myId.getIndex() &&                             // don't send it to myself
+               !_villagerHasFinishedShopping[i] &&                  // don't bother if they're finished
+               _villagerRequestList[i] > _villagerGrantedList[i];   // more requests than grants?
     }
 
     /**
@@ -252,26 +263,6 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
-    /**
-     * After the core loop has ended, this method is called to block the Villager thread until we know that all other
-     * villagers have also finished their core loops, i.e. have finished their 3 shopping sessions. This method
-     * implements the Monitor pattern.
-     *
-     * The _villagerHasFinishedShopping array is accessed by the Receiver thread, hence this method is synchronised.
-     */
-    private synchronized void waitForOtherVillagersToFinishShopping() {
-        System.out.println(_myId.getDisplayString() +
-                "waiting for other villagers to finish shopping (they need me to reply)");
-
-        // Monitor the _villagerHasFinishedShopping array
-        while (haveOtherVillagersNotFinishedShopping()) {
-            try {
-                wait();
-            }
-            catch (InterruptedException ignored) { }
-        }
-    }
-
     private synchronized void incrementMyRequestCount() {
         ++_villagerRequestList[_myId.getIndex()];
     }
@@ -292,21 +283,6 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
 
     private void requestTheTokenFromOtherVillagers() throws IOException {
         sendMessageToOtherVillagers(Payload.makeRequestForToken(this, _villagerRequestList[_myId.getIndex()]));
-    }
-
-    /**
-     * Determines whether all other villagers have NOT finished shopping.
-     *
-     * The Receiver thread writes to the _villagerHasFinishedShopping array, and the Villager thread reads from it,
-     * hence this method is synchronised.
-     */
-    private synchronized boolean haveOtherVillagersNotFinishedShopping() {
-        for (int i = 0; i < _totalVillagers; ++i) {
-            if (!_villagerHasFinishedShopping[i]) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

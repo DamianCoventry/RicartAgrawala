@@ -27,7 +27,7 @@ import java.net.SocketException;
  * destination, and regardless of the state of the software that's bound to that IP address.
  */
 public class UdpMessenger implements IMessenger {
-    private static final int NUM_RECEIVE_BUFFER_BYTES = 128;    // should be plenty
+    private static final int NUM_RECEIVE_BUFFER_BYTES = 256;    // should be plenty
     private final DatagramSocket _socket;
 
     /**
@@ -65,7 +65,7 @@ public class UdpMessenger implements IMessenger {
      */
     @Override
     public Message receive() throws IOException {
-        // the packets I'm sending are small. 128 bytes will be more than enough.
+        // the packets I'm sending are small. 256 bytes will be more than enough.
         byte[] bytes = new byte[NUM_RECEIVE_BUFFER_BYTES];
 
         DatagramPacket datagramPacket = new DatagramPacket(bytes, bytes.length);
