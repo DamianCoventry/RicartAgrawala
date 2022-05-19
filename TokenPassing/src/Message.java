@@ -96,25 +96,42 @@ public class Message {
     public int getVillagerIndex() {
         return _payload._villagerIndex;
     }
+
+    /**
+     * Retrieves the token within the message's payload
+     * @return the token as a string if there is one, null otherwise
+     */
     public String getToken() {
         return _payload._token;
     }
+
+    /**
+     * Retrieves the granted list within the message's payload
+     * @return the array of grants if there is one, null otherwise
+     */
     public int[] getGrantedList() {
         return _payload._grantedList;
     }
-    public int getRequestCount() { return _payload._requestCount; }
 
     /**
-     * Determines if this message is acknowledging a previously sent message
-     * @return true if this message is an acknowledgement, false otherwise
+     * Retrieves the request count within the message's payload
+     * @return the request count within the message's payload
+     */
+    public int getRequestCount() {
+        return _payload._requestCount;
+    }
+
+    /**
+     * Determines if this message is a request for the token
+     * @return true if this message is a request for the token, false otherwise
      */
     public boolean isRequestForToken() {
         return _payload._type == Payload.Type.TOKEN_REQUEST;
     }
 
     /**
-     * Determines if this message is communicating a villager's ticket number
-     * @return true if this message is an acknowledgement, false otherwise
+     * Determines if this message is transmitting the one and only one token
+     * @return true if this message is transmitting the one and only one token, false otherwise
      */
     public boolean isToken() {
         return _payload._type == Payload.Type.TOKEN;
@@ -122,7 +139,7 @@ public class Message {
 
     /**
      * Determines if this message is communicating that a villager has finished shopping
-     * @return true if this message is an acknowledgement, false otherwise
+     * @return true if this message is communicating that a villager has finished shopping, false otherwise
      */
     public boolean isFinishedShopping() {
         return _payload._type == Payload.Type.FINISHED_SHOPPING;

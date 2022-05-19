@@ -148,7 +148,7 @@ public class Message {
 
     /**
      * Determines if this message is communicating a villager's ticket number
-     * @return true if this message is an acknowledgement, false otherwise
+     * @return true if this message is communicating a villager's ticket number, false otherwise
      */
     public boolean isTicketNumber() {
         return _payload._type == Payload.Type.TICKET_NUMBER;
@@ -156,7 +156,7 @@ public class Message {
 
     /**
      * Determines if this message is communicating that a villager has finished shopping
-     * @return true if this message is an acknowledgement, false otherwise
+     * @return true if this message is communicating that a villager has finished shopping, false otherwise
      */
     public boolean isFinishedShopping() {
         return _payload._type == Payload.Type.FINISHED_SHOPPING;

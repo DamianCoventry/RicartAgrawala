@@ -9,16 +9,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fab91688-897f-4801-8844-5c391725b18c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/artifacts/TokenPassing_jar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/TokenPassing_jar.xml" afterDir="false" />
+    <list default="true" id="fab91688-897f-4801-8844-5c391725b18c" name="Changes" comment="All features implemented. Need to update the Javadoc comments then I'm done.">
+      <change beforePath="$PROJECT_DIR$/../PermissionBased/src/Message.java" beforeDir="false" afterPath="$PROJECT_DIR$/../PermissionBased/src/Message.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/TokenPassing/runOnLinux.sh" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/TokenPassing/runOnLinux.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/TokenPassing/runOnWindows.bat" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/TokenPassing/runOnWindows.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/IMessenger.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/IMessenger.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/IVillager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/IVillager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Message.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Message.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/MiniMartAccess.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/MiniMartAccess.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Payload.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Payload.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Receiver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Receiver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Villager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Villager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/runOnLinux.sh" beforeDir="false" afterPath="$PROJECT_DIR$/src/runOnLinux.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/runOnWindows.bat" beforeDir="false" afterPath="$PROJECT_DIR$/src/runOnWindows.bat" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,22 +47,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "Downloaded.Files.Path.Enabled": "false",
-    "Repository.Attach.Annotations": "false",
-    "Repository.Attach.JavaDocs": "false",
-    "Repository.Attach.Sources": "false",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "last_opened_file_path": "C:/Development/159.355-Conc-Sys-Assgn3/TokenPassing",
-    "project.structure.last.edited": "Artifacts",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Development/159.355-Conc-Sys-Assgn3/TokenPassing&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Artifacts&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="Application" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="Main" />
@@ -81,6 +82,14 @@
       <option name="presentableId" value="Default" />
       <updated>1652170983456</updated>
     </task>
+    <task id="LOCAL-00001" summary="All features implemented. Need to update the Javadoc comments then I'm done.">
+      <created>1652937750401</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1652937750401</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -96,5 +105,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="All features implemented. Need to update the Javadoc comments then I'm done." />
+    <option name="LAST_COMMIT_MESSAGE" value="All features implemented. Need to update the Javadoc comments then I'm done." />
   </component>
 </project>

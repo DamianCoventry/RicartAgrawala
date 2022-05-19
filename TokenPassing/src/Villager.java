@@ -166,15 +166,21 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
 
     @Override
     public synchronized void sendTokenToAnotherVillager() throws IOException {
-        int i = randomlyChooseAnotherVillager();
-        if (i >= 0) {
-            VillagerAddress to = new VillagerAddress(_messenger.getMyAddress(), _portStart + i, i);
-
-            System.out.println(_myId.getDisplayString() + "sending the token to " + to.getDisplayString());
-            sendMessageToVillager(to, Payload.makeTokenAndGrantedList(this, _villagerGrantedList));
-
-            relinquishToken();
+        if (!hasToken()) {
+            return;
         }
+
+        int i = randomlyChooseAnotherVillager();
+        if (i < 0) {
+            return;
+        }
+
+        VillagerAddress to = new VillagerAddress(_messenger.getMyAddress(), _portStart + i, i);
+
+        System.out.println(_myId.getDisplayString() + "sending the token to " + to.getDisplayString());
+        sendMessageToVillager(to, Payload.makeTokenAndGrantedList(this, _villagerGrantedList));
+
+        relinquishToken();
     }
 
     @Override

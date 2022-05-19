@@ -27,7 +27,16 @@ public interface IVillager {
      */
     VillagerAddress getMyId();
 
+    /**
+     * Determines whether a villager possesses the token or not
+     * @return true if the villager has the token, false if not
+     */
     boolean hasToken();
+
+    /**
+     * Returns the token. To avoid receiving a null string, use the hasToken() method first.
+     * @return null, or the token
+     */
     String getToken();
 
     /**
@@ -40,14 +49,30 @@ public interface IVillager {
     boolean isNotRequestingMiniMartAccess();
 
     /**
-     * We need to record the fact that another villager has finished shopping. This affects when this node shuts down.
+     * We need to record the fact that another villager has finished shopping. This prevents one villager sending the
+     * token to a villager that has already finished shopping and shut down.
      * @param message a message received from another villager
      */
     void recordFinishedShopping(Message message);
 
+    /**
+     * Records the fact that another village has asked for the token. When this villager has exited the mini mart they
+     * will randomly choose another village to send the token to.
+     * @param message a message received from another villager
+     */
     void recordRequestForToken(Message message);
 
+    /**
+     * Saves the token and the granted list into internal storage. After this method completes this villager may enter
+     * the mini mart because there is only one token, and if a villager possesses it then they have mutual exclusivity.
+     * @param message a message received from another villager
+     */
     void recordTokenAndGrantedList(Message message);
 
+    /**
+     * If this villager has the token, then they will send it to another villager. The other villager is randomly
+     * chosen from the set of villagers still in the simulation.
+     * @throws IOException if the token cannot be sent
+     */
     void sendTokenToAnotherVillager() throws IOException;
 }

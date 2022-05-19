@@ -41,9 +41,9 @@ public class Main {
                 villager.start();
             }
 
-            // we wait for ALL villagers to finish shopping, not just the villagers within this node. to be especially
-            // clear, that's waiting for ALL villagers within ALL nodes. it's done this way because villagers' Receiver
-            // threads only unblock when they receive a message. if we're not responding then we're causing starvation.
+            // a node will exit after the last villager within the node has finished shopping. before villagers leave
+            // the simulation, they let all other villagers know that they're about to shut down. this prevents
+            // villagers from sending the token to someone who's not there.
 
             villagersDone.await();
 

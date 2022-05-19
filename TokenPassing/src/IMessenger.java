@@ -43,11 +43,4 @@ public interface IMessenger {
      * @return this villager's address
      */
     InetAddress getMyAddress();
-
-    /**
-     * Returns a value unique to this villager. This value can be used to break ties when different villagers happen
-     * to generate the same random number.
-     * @return a value unique to this villager
-     */
-    int getTiebreakerValue();
 }

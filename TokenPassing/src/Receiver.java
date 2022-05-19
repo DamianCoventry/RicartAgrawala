@@ -48,6 +48,19 @@ public class Receiver extends Thread {
         return _mustShutdown;
     }
 
+    /**
+     * This method is the core receiving logic for a villager. All received messages are processed by this method, and
+     * there is no other code in this project receiving messages.
+     *
+     * This method ends when an exception is thrown, or the Villager thread uses the public shutdown() method. The
+     * Villager thread will only call that method when it is certain that this villager instance has finished shopping.
+     *
+     * Roughly half of the Ricart-Agrawala algorithm is implemented here. The other half is within the Villager class.
+     *
+     * The approach here is straight forward -- we inspect the received message then record some state based upon the
+     * message's type. For the case of receiving a request for the token, it's possible we immediately send the token to
+     * some other villager.
+     */
     @Override
     public void run() {
         try {
@@ -55,15 +68,22 @@ public class Receiver extends Thread {
                 Message from = _messenger.receive();        // blocks until a message arrives
 
                 if (from.isRequestForToken()) {
+                    // recording this request for a token allows this instance to potentially send the token to
+                    // the sender.
                     _villager.recordRequestForToken(from);
+
+                    // if this instance is not currently requesting mini mart access AND has the token, then we can
+                    // send it to some other villager right now. otherwise the Villager thread will send it later.
                     if (_villager.isNotRequestingMiniMartAccess() && _villager.hasToken()) {
                         _villager.sendTokenToAnotherVillager();
                     }
                 }
                 else if (from.isToken()) {
+                    // recording the token allows this villager to enter the mini mart
                     _villager.recordTokenAndGrantedList(from);
                 }
                 else if (from.isFinishedShopping()) {
+                    // recording this state prevents the sender of this message from receiving the token
                     _villager.recordFinishedShopping(from);
                 }
             }

@@ -15,11 +15,6 @@
  * does not stop the request i.e. a thrown exception. This is achieved by using the Java try() {} feature and
  * implementing AutoCloseable.
  *
- * This is required due to the Ricart-Agrawala algorithm being aware of 'quiescent nodes', or as the lecture notes put
- * it:
- *      "If a node remains inactive for a long period, other nodes cannot enter the critical section because of the
- *      ever-increasing ticket numbers."
- *
  * The Receiver class is the place where mini mart access is tested. The Receiver class uses the IVillager interface's
  * method isNotRequestingMiniMartAccess() to perform the test.
  *

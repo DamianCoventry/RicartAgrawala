@@ -82,14 +82,4 @@ public class UdpMessenger implements IMessenger {
     public InetAddress getMyAddress() {
         return _socket.getLocalAddress();
     }
-
-    /**
-     * Returns a value unique to this villager. This value can be used to break ties when different villagers happen
-     * to generate the same random number. I chose to use the port this villager is bound to.
-     * @return a value unique to this villager
-     */
-    @Override
-    public int getTiebreakerValue() {
-        return _socket.getLocalPort();
-    }
 }

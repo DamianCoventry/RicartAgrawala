@@ -16,20 +16,20 @@ import com.google.gson.Gson;
  * is unambiguous, I'm formatting the data as JSON.
  *
  * To give the data some context, the following types were created:
- *      TICKET_NUMBER
- *          The sender is informing you of their ticket number. You should update your internal 'largest ticket' value
- *          if this value is larger than yours. You should also compare your ticket number to this one and let the
- *          sender know if they should enter the mini mart before you.
+ *      TOKEN_REQUEST
+ *          The sender is requesting possession of the token. You should record this fact so that when you receive the
+ *          token, then shopp at the mini mart, you can choose one of the villagers requesting the token to send the
+ *          token to.
  *
- *      ACKNOWLEDGEMENT
- *          The sender is acknowledging that they received your message. You should record the fact this villager has
- *          replied to you. If it's the last villager to reply then you can enter the mini mart, otherwise you need to
- *          keep waiting.
+ *      TOKEN
+ *          The sender has sent you the token. Good for you, go tell your mum. You may enter the mini mart and shop for
+ *          goods. Once you're finished shopping, you can choose one of the villagers requesting the token and send it
+ *          to them.
  *
  *      FINISHED_SHOPPING
  *          Each villager shops 3 times. Receipt of this message means the sender has completed all 3 shops. You should
- *          record the fact that this villager is finished. If it's the last villager to send you this message type then
- *          you can end this process, otherwise you need to keep waiting.
+ *          record the fact that this villager is finished. Never send the token to a villager that has finished
+ *          shopping, they won't send it on to someone else.
  */
 public class Payload {
     // These are public because of a Gson requirement
@@ -41,8 +41,9 @@ public class Payload {
     public Type _type;
 
     /**
-     * Builds a payload that informs the receiver of our ticket number
+     * Builds a payload that informs the receiver of a request for the token
      * @param sender the villager whose details are packed into the payload
+     * @param requestCount the count to write into the payload
      * @return a new payload object
      */
     public static Payload makeRequestForToken(IVillager sender, int requestCount) {
@@ -50,8 +51,9 @@ public class Payload {
     }
 
     /**
-     * Builds a payload that informs the receiver that we received their message
+     * Builds a payload that transmits the token to another villager
      * @param sender the villager whose details are packed into the payload
+     * @param grantedList the list of grants to write into the payload
      * @return a new payload object
      */
     public static Payload makeTokenAndGrantedList(IVillager sender, int[] grantedList) {
@@ -68,7 +70,7 @@ public class Payload {
     }
 
     /**
-     * This is private to force usage of the above public static methods. Their names dictate my intentions, a
+     * These are private to force usage of the above public static methods. Their names dictate my intentions, a
      * constructor does not.
      * @param villagerIndex the index of the villager
      * @param type the type of payload to construct
@@ -78,13 +80,11 @@ public class Payload {
         _requestCount = 0;
         _type = type;
     }
-
     private Payload(int villagerIndex, int requestCount, Type type) {
         _villagerIndex = villagerIndex;
         _requestCount = requestCount;
         _type = type;
     }
-
     private Payload(int villagerIndex, String token, int[] grantedList, Type type) {
         _villagerIndex = villagerIndex;
         _token = token;
