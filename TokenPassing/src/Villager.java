@@ -18,6 +18,18 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * This class provides the ability for a villager to enter the mini mart mutually exclusively.
+ *
+ * Roughly half of the Ricart-Agrawala algorithm is implemented here. The other half is within the Receiver class.
+ *
+ * The logic within this class runs in its own thread so that this node can run multiple villagers concurrently. From a
+ * villager's point of view, it doesn't matter where it's run, nor where the other villagers are run. Each villager can
+ * be reached via an IP address and port, that's the important part.
+ *
+ * The thread can end as soon as it's finished shopping 3 times. As long as it notifies all other villagers that it's
+ * shutting down there will be no side effects to the RA algorithm.
+ */
 public class Villager extends Thread implements IVillager, IRequestsMiniMartAccess {
     public static final int NUM_VILLAGERS_PER_NODE = 5;
     public static final int MAX_NUM_TIMES_SHOPPED = 3;
@@ -42,6 +54,16 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     private String _token;
     private final Receiver _receiver;
 
+    /**
+     * Constructs an instance of a villager. Villager objects within a node don't share any data via memory. They're
+     * intentionally self-contained.
+     * @param done an object to signal when this villager is finished
+     * @param ipAddress an address on the local machine to bind to
+     * @param portStart the first value in a contiguous range of port values
+     * @param totalVillagers how many villagers are part of the simulation
+     * @param id the unique index of this villager
+     * @throws IOException if the passed in IP address is unable to be bound to
+     */
     public Villager(CountDownLatch done, String ipAddress, int portStart, int totalVillagers, int id) throws IOException {
         _done = done;
         _portStart = portStart;
@@ -60,6 +82,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         _myId = new VillagerAddress(InetAddress.getByName(ipAddress), portStart + id, id);
         _messenger = new UdpMessenger(InetAddress.getByName(ipAddress), portStart + id);
 
+        // I chose to make villager 0 possess the token first
         if (id == 0) {
             _token = MAGICAL_TOKEN_VALUE;
             _villagerRequestList[id] = 1;
@@ -72,25 +95,43 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         _receiver.start();
     }
 
+    /**
+     * This method is the core loop of the Villager. It only loops 3 times then ends. Each pass through the loop
+     * represents the villager shopping one time. After the loop is ended, this thread can end straight away because the
+     * incrementShoppingCount() method will have told all other villagers that this villager has finished. This will
+     * prevent those villagers from sending the token to a villager that has ended.
+     *
+     * The loop uses the MiniMartAccess class within a try () {} statement to indicate, and control, the entering and
+     * exiting of the critical section of the Ricart-Agrawala algorithm. Structuring the code this way provides a strong
+     * guarantee that the JVM will call the Villager class's stopRequestingMiniMartAccess() implementation, therefore
+     * assisting in a correct implementation of the RA algorithm.
+     */
     @Override
     public void run() {
         try {
+            // the core loop. this only loops thrice.
             while (hasNotFinishedShopping()) {
+                // if this villager doesn't have the token then they must ask the other villagers for it. Then this
+                // villager must sit and wait for one of them to send the token here.
                 if (!hasToken()) {
                     incrementMyRequestCount();
                     requestTheTokenFromOtherVillagers();
                     waitUntilGrantedTheToken(); // implements the Monitor pattern inside
                 }
 
+                // this try block contains the villager's request to access the mini mart. by implementing this we
+                // provide a way for the Receiver thread to know this thread is currently requesting mini mart access.
+                // this is achieved by the constructor + close methods of the MiniMartAccess class calling back into the
+                // Villager class, which in turn sets the value of the _requestingMiniMartAccess variable.
                 try (MiniMartAccess ignored = new MiniMartAccess(this)) {
                     // _requestingMiniMartAccess is true at this point
-                    incrementGrantedCount();
+                    updateGrantedCount();
                     enterMiniMart();
                     incrementShoppingCount(); // causes hasNotFinishedShopping() to return false eventually
                 }
                 // _requestingMiniMartAccess is strongly guaranteed to be false at this point
 
-                sendTokenToAnotherVillager();
+                sendTokenToAnotherVillager(); // the other villager is randomly chosen
             }
         }
         catch (Exception e) {
@@ -98,38 +139,54 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
         finally {
             try {
+                // the receiver sends a message to shut down, hence the need for the try/catch
                 _receiver.shutdown();
             } catch (IOException ignore) {}
             _done.countDown();
         }
     }
 
+    /**
+     * Retrieves the address of this villager.
+     *
+     * Used by the Payload class and Receiver class. The Payload class is used by the Receiver thread and the Villager
+     * thread, hence this method is synchronised.
+     * @return the address of this villager
+     */
     @Override
     public synchronized VillagerAddress getMyId() {
         return _myId;
     }
 
+    /**
+     * Determines whether this villager has the token or not
+     *
+     * Used by both the Villager thread and the Receiver thread, hence this method is synchronised.
+     * @return true if this villager has the token, false otherwise
+     */
     @Override
     public synchronized boolean hasToken() {
         // Objects.equals() checks for null before calling .equals()
         return Objects.equals(getToken(), MAGICAL_TOKEN_VALUE);
     }
 
+    /**
+     * Retrieves the token if it's possessed by this villager
+     *
+     * Used by both the Villager thread and the Receiver thread, hence this method is synchronised.
+     * @return the token as a string, or null if the token is not possessed
+     */
     @Override
     public synchronized String getToken() {
         return _token;
     }
 
-    private synchronized void relinquishToken() {
-        _token = null;
-    }
-
     /**
-     * Updates internal storage to indicate that a villager has finished shopping. This method also nudges the monitor
-     * within the waitForOtherVillagersToFinishShopping() method.
+     * Updates internal storage to indicate that a villager has finished shopping.
      *
      * Only called by the Receiver thread, but the Villager thread reads the values of _villagerHasFinishedShopping,
      * hence this method is synchronised.
+     * @param message a message received from another villager
      */
     @Override
     public synchronized void recordFinishedShopping(Message message) {
@@ -139,6 +196,13 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Updates internal storage to indicate that a villager has requested the token
+     *
+     * Only called by the Receiver thread, but the Villager thread reads the values of _villagerRequestList, hence this
+     * method is synchronised.
+     * @param message a message received from another villager
+     */
     @Override
     public synchronized void recordRequestForToken(Message message) {
         int i = message.getVillagerIndex();
@@ -147,6 +211,14 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Updates internal storage to indicate that a villager has received the token, and updates the granted list. This
+     * method also nudges the monitor that's implemented in the waitUntilGrantedTheToken() method.
+     *
+     * Only called by the Receiver thread, but the Villager thread reads the values of _token and _villagerGrantedList,
+     * hence this method is synchronised.
+     * @param message a message received from another villager
+     */
     @Override
     public synchronized void recordTokenAndGrantedList(Message message) {
         if (message.getVillagerIndex() < 0 || message.getVillagerIndex() >= _totalVillagers) {
@@ -164,13 +236,20 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Transmits the token to another villager, chosen at random, then clears this villager's knowledge of the token.
+     * @throws IOException if the token cannot be sent to another villager
+     */
     @Override
     public synchronized void sendTokenToAnotherVillager() throws IOException {
-        if (!hasToken()) {
+        if (!hasToken()) { // don't bother if we don't have the token
             return;
         }
 
-        int i = randomlyChooseAnotherVillager();
+        // if this is only villager instance left, then -1 will be returned from this method because we can't choose
+        // ourselves when randomly choosing a villager. for this case we don't need to send the token anywhere, just
+        // hang onto it and iterate through the main loop again.
+        int i = chooseAnotherVillagerRandomly();
         if (i < 0) {
             return;
         }
@@ -180,9 +259,16 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         System.out.println(_myId.getDisplayString() + "sending the token to " + to.getDisplayString());
         sendMessageToVillager(to, Payload.makeTokenAndGrantedList(this, _villagerGrantedList));
 
-        relinquishToken();
+        relinquishToken(); // clears internal state
     }
 
+    /**
+     * Determines if this villager is NOT requesting mini mart access.
+     *
+     * Only called by the Receiver thread, but the Villager thread writes the value of _requestingMiniMartAccess, hence
+     * this method is synchronised.
+     * @return true if this villager is NOT requesting mini mart access, false otherwise
+     */
     @Override
     public boolean isNotRequestingMiniMartAccess() {
         return !_requestingMiniMartAccess;
@@ -212,7 +298,20 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
                 _numTimesShopped + "/" + MAX_NUM_TIMES_SHOPPED + ". Letting the next villager in.");
     }
 
-    private int randomlyChooseAnotherVillager() {
+    /**
+     * Clears knowledge of the token.
+     */
+    private synchronized void relinquishToken() {
+        _token = null;
+    }
+
+    /**
+     * Chooses another villager by collecting all villagers that are requesting a token, then randomly choosing one of
+     * them. This does not prevent starvation in any way, nor is it trying to. The expectation of this method is to
+     * use a uniform distribution to choose a villager randomly.
+     * @return the index of villager that is requesting the token
+     */
+    private int chooseAnotherVillagerRandomly() {
         final ArrayList<Integer> villagers = new ArrayList<>();
         for (int i = 0; i < _totalVillagers; ++i) {
             if (isVillagerRequestingToken(i)) {
@@ -225,6 +324,13 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         return villagers.get(_random.nextInt(villagers.size()));
     }
 
+    /**
+     * Determines if a villager is requesting a token. True is returned if the index is not this villager, is not for a
+     * villager that has finished shopping, and is for a villager that has more requests for the token than grants for
+     * the token.
+     * @param i the index of a villager to test
+     * @return true if the villager is requesting a token, false otherwise
+     */
     private boolean isVillagerRequestingToken(int i) {
         return i != _myId.getIndex() &&                             // don't send it to myself
                !_villagerHasFinishedShopping[i] &&                  // don't bother if they're finished
@@ -236,6 +342,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * has entered the mini mart, which really means this villager has achieved mutual exclusivity.
      *
      * Only called by the core loop above, no need to protect any state with a synchronisation mechanism.
+     * @throws InterruptedException if the thread is interrupted
      */
     private void enterMiniMart() throws InterruptedException {
         System.out.println(_myId.getDisplayString() + "entered the Mini Mart.");
@@ -247,6 +354,13 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Determines if this villager has NOT finished shopping.
+     *
+     * Only called by the Receiver thread, but the Villager thread writes the value of _numTimesShopped, hence this
+     * method is synchronised.
+     * @return true if this villager has finished shopping, false otherwise
+     */
     private boolean hasNotFinishedShopping() {
         return _numTimesShopped < MAX_NUM_TIMES_SHOPPED;
     }
@@ -257,6 +371,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the above core loop, but the Receiver thread reads the value of _numTimesShopped via the
      * hasNotFinishedShopping() method, hence this method is synchronised.
+     * @throws IOException if the message can't be sent
      */
     private synchronized void incrementShoppingCount() throws IOException {
         if (++_numTimesShopped >= MAX_NUM_TIMES_SHOPPED) {
@@ -269,14 +384,33 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Increments internal state to indicate a new request for the token
+     *
+     * Only called above by the core loop. The Receiver thread reads the value of the _villagerRequestList array, hence
+     * this method is synchronised.
+     */
     private synchronized void incrementMyRequestCount() {
         ++_villagerRequestList[_myId.getIndex()];
     }
 
-    private synchronized void incrementGrantedCount() {
+    /**
+     * Updates internal state to indicate that a token has been granted
+     *
+     * Only called above by the core loop. The Receiver thread reads the value of the _villagerRequestList array, hence
+     * this method is synchronised.
+     */
+    private synchronized void updateGrantedCount() {
         _villagerGrantedList[_myId.getIndex()] = _villagerRequestList[_myId.getIndex()];
     }
 
+    /**
+     * For each iteration of the core loop where the villager does not possess the token, this method is called to block
+     * the Villager thread until a token is granted. This is a core part of the Ricart-Agrawala algorithm. This method
+     * implements the Monitor pattern.
+     *
+     * The _token array is accessed by the Receiver thread, hence this method is synchronised.
+     */
     private synchronized void waitUntilGrantedTheToken() {
         // Monitor the _token variable
         while (!hasToken()) {
@@ -287,6 +421,10 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         }
     }
 
+    /**
+     * Informs all other villagers that this villager is requesting the token.
+     * @throws IOException if the message can't be sent
+     */
     private void requestTheTokenFromOtherVillagers() throws IOException {
         sendMessageToOtherVillagers(Payload.makeRequestForToken(this, _villagerRequestList[_myId.getIndex()]));
     }
@@ -295,6 +433,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * Informs all other villagers that this villager is finished shopping. This means that this villager has shopped 3
      * times, and therefore has ended its core loop. It also means this villager will no longer request mini mart
      * access.
+     * @throws IOException if the message can't be sent
      */
     private void tellOtherVillagersIveFinishedShopping() throws IOException {
         sendMessageToOtherVillagers(Payload.makeFinishedShopping(this));
@@ -303,6 +442,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * Uses the messenger object to physically put bytes on the wire for another villager to read. All socket errors are
      * swallowed, but printed to the console window.
+     * @throws IOException if the message can't be sent
      */
     private void sendMessageToVillager(VillagerAddress to, Payload payload) throws IOException {
         try {
@@ -317,6 +457,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     /**
      * Sends the passed in payload data to all other villagers. All socket errors are swallowed, but printed to the
      * console window.
+     * @throws IOException if the message can't be sent
      */
     private void sendMessageToOtherVillagers(Payload payload) throws IOException {
         for (int i = 0; i < _totalVillagers; ++i) {

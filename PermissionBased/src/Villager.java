@@ -151,6 +151,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the Payload class. The Payload class is used by the Receiver thread and the Villager thread, hence
      * this method is synchronised.
+     * @return the address of this villager
      */
     @Override
     public synchronized VillagerAddress getMyId() {
@@ -162,6 +163,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the Payload class. The Payload class is used by the Receiver thread and the Villager thread, hence
      * this method is synchronised.
+     * @return the ticket of this villager
      */
     @Override
     public synchronized int getTicket() {
@@ -185,6 +187,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the Receiver thread, but the Villager thread reads the values of _ticket, hence this method is
      * synchronised.
+     * @return true if the passed in villager shops before this villager
      */
     @Override
     public synchronized boolean doesVillagerShopBeforeMe(Message message) {
@@ -226,6 +229,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the Receiver thread, but the Villager thread writes the value of _numTimesShopped, hence this
      * method is synchronised.
+     * @return true if this villager has finished shopping, false otherwise
      */
     @Override
     public synchronized boolean hasNotFinishedShopping() {
@@ -237,6 +241,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the Receiver thread, but the Villager thread writes the value of _requestingMiniMartAccess, hence
      * this method is synchronised.
+     * @return true if this villager is NOT requesting mini mart access, false otherwise
      */
     @Override
     public synchronized boolean isNotRequestingMiniMartAccess() {
@@ -270,6 +275,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * has entered the mini mart, which really means this villager has achieved mutual exclusivity.
      *
      * Only called by the core loop above, no need to protect any state with a synchronisation mechanism.
+     * @throws InterruptedException if the thread is interrupted
      */
     private void enterMiniMart() throws InterruptedException {
         System.out.println(_myId.getDisplayString() + "entered the Mini Mart.");
@@ -363,6 +369,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * The Receiver thread writes to the _villagerHasReplied array, and the Villager thread reads from it, hence this
      * method is synchronised.
+     * @return true if all other villagers have NOT replied, false otherwise
      */
     private synchronized boolean haveOtherVillagersNotReplied() {
         for (int i = 0; i < _totalVillagers; ++i) {
@@ -378,6 +385,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * The Receiver thread writes to the _villagerHasFinishedShopping array, and the Villager thread reads from it,
      * hence this method is synchronised.
+     * @return true if all other villagers have NOT finished shopping, false otherwise
      */
     private synchronized boolean haveOtherVillagersNotFinishedShopping() {
         for (int i = 0; i < _totalVillagers; ++i) {
