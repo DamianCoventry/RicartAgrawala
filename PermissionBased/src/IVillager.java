@@ -67,7 +67,7 @@ public interface IVillager {
      * @see MiniMartAccess
      * @return whether the villager is currently requesting mini mart access
      */
-    boolean isRequestingMiniMartAccess();
+    boolean isNotRequestingMiniMartAccess();
 
     /**
      * Returns whether the message represents a villager that must shop before this villager. This is achieved by

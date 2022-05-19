@@ -1,27 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="TokenPassing:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="fab91688-897f-4801-8844-5c391725b18c" name="Changes" comment="" />
+    <list default="true" id="fab91688-897f-4801-8844-5c391725b18c" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/artifacts/TokenPassing_jar.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/anaptecs_jeaf_owalibs_apache_commons_cli.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/IMessenger.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/IRequestsMiniMartAccess.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/IVillager.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/META-INF/MANIFEST.MF" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Message.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/MiniMartAccess.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Payload.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Receiver.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/UdpMessenger.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Villager.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/VillagerAddress.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/runOnLinux.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/runOnWindows.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PermissionBased/src/IVillager.java" beforeDir="false" afterPath="$PROJECT_DIR$/../PermissionBased/src/IVillager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PermissionBased/src/MiniMartAccess.java" beforeDir="false" afterPath="$PROJECT_DIR$/../PermissionBased/src/MiniMartAccess.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PermissionBased/src/Receiver.java" beforeDir="false" afterPath="$PROJECT_DIR$/../PermissionBased/src/Receiver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PermissionBased/src/Villager.java" beforeDir="false" afterPath="$PROJECT_DIR$/../PermissionBased/src/Villager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TokenPassing.iml" beforeDir="false" afterPath="$PROJECT_DIR$/TokenPassing.iml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectId" id="28xvK4PJXdZQoNn2QbXcBe1b6vy" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Development/159.355-Conc-Sys-Assgn3/TokenPassing&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;
   }
-}]]></component>
+}</component>
+  <component name="RunManager">
+    <configuration name="Application" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="Main" />
+      <module name="TokenPassing" />
+      <option name="PROGRAM_PARAMETERS" value="-a 127.0.0.1 -p 20000 -n 1 -i 0" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -32,5 +96,19 @@
       <updated>1652170983456</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
   </component>
 </project>

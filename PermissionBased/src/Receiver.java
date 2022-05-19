@@ -98,7 +98,7 @@ public class Receiver extends Thread {
                         // if this is the largest ticket number we've seen then save it
                         _villager.updateLargestTicket(from);
 
-                        if (!_villager.isRequestingMiniMartAccess() || _villager.doesVillagerShopBeforeMe(from)) {
+                        if (_villager.isNotRequestingMiniMartAccess() || _villager.doesVillagerShopBeforeMe(from)) {
                             // by replying to the sender we're giving our consent for them to enter the mini mart before
                             // us. if all other villagers do the same, then the sender can happily enter the mini mart.
                             replyToVillagersMessage(from);

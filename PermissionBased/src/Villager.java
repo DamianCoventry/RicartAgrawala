@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
@@ -76,9 +77,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
         _totalVillagers = totalVillagers;
         _villagerHasReplied = new boolean[totalVillagers]; // initialised via clearOtherVillagersReplies() below
         _villagerHasFinishedShopping = new boolean[totalVillagers];
-        for (int i = 0; i < totalVillagers; ++i) {
-            _villagerHasFinishedShopping[i] = false;
-        }
+        Arrays.fill(_villagerHasFinishedShopping, false);
 
         int ticketNumber = _random.nextInt(4 * totalVillagers);  // the x4 will help reduce clashes
         _largestTicket = _ticket = ticketNumber;
@@ -234,21 +233,21 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
     }
 
     /**
-     * Determines if this villager is requesting mini mart access.
+     * Determines if this villager is NOT requesting mini mart access.
      *
      * Only called by the Receiver thread, but the Villager thread writes the value of _requestingMiniMartAccess, hence
      * this method is synchronised.
      */
     @Override
-    public synchronized boolean isRequestingMiniMartAccess() {
-        return _requestingMiniMartAccess;
+    public synchronized boolean isNotRequestingMiniMartAccess() {
+        return !_requestingMiniMartAccess;
     }
 
     /**
      * Updates internal storage to indicate that this villager has started to request mini mart access.
      *
      * Only called by the MiniMartAccess class as part of the core loop above. The Receiver thread will read the value
-     * of _requestingMiniMartAccess via the call to isRequestingMiniMartAccess(), hence this method is synchronised.
+     * of _requestingMiniMartAccess via the call to isNotRequestingMiniMartAccess(), hence this method is synchronised.
      */
     @Override
     public synchronized void startRequestingMiniMartAccess() {
@@ -259,7 +258,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      * Updates internal storage to indicate that this villager has stopped requesting mini mart access.
      *
      * Only called by the MiniMartAccess class as part of the core loop above. The Receiver thread will read the value
-     * of _requestingMiniMartAccess via the call to isRequestingMiniMartAccess(), hence this method is synchronised.
+     * of _requestingMiniMartAccess via the call to isNotRequestingMiniMartAccess(), hence this method is synchronised.
      */
     @Override
     public synchronized void stopRequestingMiniMartAccess() {

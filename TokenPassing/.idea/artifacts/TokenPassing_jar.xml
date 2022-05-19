@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="TokenPassing:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/TokenPassing_jar</output-path>
+    <root id="archive" name="TokenPassing.jar">
+      <element id="module-output" name="TokenPassing" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/anaptecs/jeaf/owalibs/org.apache.commons.cli/4.3.1/org.apache.commons.cli-4.3.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
