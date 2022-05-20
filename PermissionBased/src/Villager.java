@@ -293,6 +293,7 @@ public class Villager extends Thread implements IVillager, IRequestsMiniMartAcce
      *
      * Only called by the above core loop, but the Receiver thread reads the value of _numTimesShopped via the
      * hasNotFinishedShopping() method, hence this method is synchronised.
+     * @throws IOException if the 'finished shopping' message was unable to be sent to all other villagers
      */
     private synchronized void incrementShoppingCount() throws IOException {
         if (++_numTimesShopped >= MAX_NUM_TIMES_SHOPPED) {
